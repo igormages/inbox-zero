@@ -126,7 +126,7 @@ export function InlineEmailList({ children }: { children?: ReactNode }) {
   }, [allHandled, hasAutoCollapsed]);
 
   function markArchived(threadIds: string[]) {
-    setArchivedThreadIdList((current) => [
+    setArchivedThreadIdList((current: string[]) => [
       ...new Set([...current, ...threadIds]),
     ]);
   }
