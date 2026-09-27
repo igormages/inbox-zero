@@ -498,10 +498,7 @@ export function InlineEmailCard({
               </DropdownMenuTrigger>
             </Tooltip>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                disabled={isDone || actionState === "loading"}
-                onClick={handleArchive}
-              >
+              <DropdownMenuItem disabled={isDone} onClick={handleArchive}>
                 {isDone ? (
                   <CheckIcon className="mr-2 size-4" />
                 ) : (
