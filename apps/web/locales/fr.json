@@ -1373,7 +1373,7 @@
   "Future events": "Événements futurs",
   "Fwd: Release notes": "Fwd: Notes de publication",
   "General": "Général",
-  "Generate a new webhook secret to reveal it once for copying.": "Générer un nouveau secret webhook pour le révéler une fois pour copier.",
+  "Generate a new webhook secret to reveal it once for copying.": "Générez un nouveau secret de webhook pour l’afficher une seule fois et le copier.",
   "Generate draft replies": "Générer des projets de réponses",
   "Generate Hash": "Générer du Hash",
   "Generate Report": "Générer un rapport",
@@ -3532,5 +3532,7 @@
   "✨ New rule": "Nouvelle règle",
   "✨ Use": "Utilisation",
   "❌ None": "Aucun",
-  "🔮 ZenDaily - 15th Dec 2025 🔮": "ZenDaily - 15 décembre 2025"
+  "🔮 ZenDaily - 15th Dec 2025 🔮": "ZenDaily - 15 décembre 2025",
+  "Webhook Secret": "Secret du webhook",
+  "Include this in the X-Webhook-Secret header when setting up webhook endpoints. Existing secrets are not shown again. When you generate a new secret, copy it before closing this dialog.": "Ajoutez ce secret dans l’en-tête X-Webhook-Secret de vos webhooks. Les secrets existants ne sont plus affichés. Si vous en générez un nouveau, copiez-le avant de fermer cette fenêtre."
 }
