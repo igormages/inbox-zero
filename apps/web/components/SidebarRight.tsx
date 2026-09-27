@@ -7,7 +7,7 @@ import {
   useEffect,
   useRef,
   type CSSProperties,
-  type KeyboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent,
 } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -58,7 +58,7 @@ export function SidebarRight({
     }
   }
 
-  function handleResizeKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleResizeKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     let nextWidth: number;
     if (event.key === "ArrowLeft") nextWidth = width + 32;
     else if (event.key === "ArrowRight") nextWidth = width - 32;
