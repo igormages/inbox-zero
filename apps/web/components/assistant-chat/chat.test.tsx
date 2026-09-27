@@ -26,8 +26,10 @@ class MockResizeObserver {
 const {
   mockCaptureAction,
   mockHandleSubmit,
+  mockLanguage,
   mockMutate,
   mockRegenerate,
+  mockSendMessage,
   mockSetAttachments,
   mockSetChatId,
   mockSetContext,
@@ -40,8 +42,10 @@ const {
 } = vi.hoisted(() => ({
   mockCaptureAction: vi.fn(),
   mockHandleSubmit: vi.fn(),
+  mockLanguage: { current: "fr" as "fr" | "en" },
   mockMutate: vi.fn(),
   mockRegenerate: vi.fn(),
+  mockSendMessage: vi.fn(),
   mockSetAttachments: vi.fn(),
   mockSetChatId: vi.fn(),
   mockSetContext: vi.fn(),
@@ -133,6 +137,10 @@ vi.mock("@/components/Tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("@/components/LanguageProvider", () => ({
+  useInterfaceLanguage: () => ({ language: mockLanguage.current }),
+}));
+
 vi.mock("better-auth/react", () => ({
   createAuthClient: () => ({
     signIn: vi.fn(),
@@ -177,7 +185,7 @@ vi.mock("@/providers/ChatProvider", () => ({
       stop: mockStop,
       regenerate: mockRegenerate,
       setMessages: mockSetMessages,
-      sendMessage: vi.fn(),
+      sendMessage: mockSendMessage,
     } satisfies Partial<ChatHelpers>,
     chatId: null,
     input: "",
@@ -211,6 +219,7 @@ afterEach(() => {
 describe("Chat history", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLanguage.current = "fr";
     mockUseChats.mockImplementation((shouldFetch: boolean) => ({
       data: shouldFetch ? { chats: [chatHistoryEntry] } : undefined,
       error: undefined,
@@ -234,6 +243,35 @@ describe("Chat history", () => {
 
     await waitFor(() => {
       expect(mockSetChatId).toHaveBeenCalledWith("chat-1");
+    });
+  });
+
+  it.each([
+    "Aide-moi à gérer ma boîte de réception aujourd'hui.",
+    "Nettoyez ma boîte de réception",
+    "Suggère des règles que je devrais ajouter",
+  ])("sends the French suggestion shown on the button: %s", async (text) => {
+    const { Chat } = await import("@/components/assistant-chat/chat");
+
+    render(<Chat open />);
+    fireEvent.click(screen.getByRole("button", { name: text }));
+
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      role: "user",
+      parts: [{ type: "text", text }],
+    });
+  });
+
+  it("keeps English suggestions in English when the interface language is English", async () => {
+    mockLanguage.current = "en";
+    const { Chat } = await import("@/components/assistant-chat/chat");
+
+    render(<Chat open />);
+    fireEvent.click(screen.getByRole("button", { name: "Clean up my inbox" }));
+
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      role: "user",
+      parts: [{ type: "text", text: "Clean up my inbox" }],
     });
   });
 });

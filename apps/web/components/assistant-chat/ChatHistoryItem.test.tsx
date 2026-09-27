@@ -43,6 +43,7 @@ describe("ChatHistoryItem", () => {
         <DropdownMenuContent>
           <ChatHistoryItem
             chat={chat}
+            language="en"
             onSelect={vi.fn()}
             onRename={vi.fn()}
             onDelete={vi.fn()}

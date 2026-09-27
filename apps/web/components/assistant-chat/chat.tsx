@@ -44,6 +44,10 @@ import { DeleteChatDialog } from "@/components/assistant-chat/DeleteChatDialog";
 import { randomUuid } from "@/utils/uuid";
 import { VoiceInput } from "@/components/voice/VoiceInput";
 import { liveHistoryFromUiMessages } from "@/utils/voice/live-history";
+import { useInterfaceLanguage } from "@/components/LanguageProvider";
+import type { InterfaceLanguage } from "@/components/LanguageProvider";
+import frTranslations from "@/locales/fr.json";
+import { translateUiText } from "@/utils/i18n/translate-ui-text";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
 const MAX_FILES = 5;
@@ -61,6 +65,7 @@ export function Chat({
   open: boolean;
   onClose?: () => void;
 }) {
+  const { language } = useInterfaceLanguage();
   const analytics = useProductAnalytics("assistant_chat");
   const {
     chat,
@@ -335,10 +340,11 @@ export function Chat({
       ) : (
         <NewChatView
           firstName={firstName}
+          language={language}
           inputArea={inputArea}
-          onSuggestionClick={(text) => {
+          onSuggestionClick={(text, index) => {
             analytics.captureAction("chat_suggestion_clicked", {
-              suggestion_index: CHAT_EXAMPLES.indexOf(text),
+              suggestion_index: index,
             });
             chat.sendMessage({
               role: "user",
@@ -419,32 +425,40 @@ const CHAT_EXAMPLES = [
 
 function NewChatView({
   firstName,
+  language,
   inputArea,
   onSuggestionClick,
 }: {
   firstName: string | undefined;
+  language: InterfaceLanguage;
   inputArea: React.ReactNode;
-  onSuggestionClick: (text: string) => void;
+  onSuggestionClick: (text: string, index: number) => void;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-[var(--chat-px)]">
       <div className="w-full max-w-[var(--chat-max-w)]">
         <h1 className="mb-6 text-center text-2xl sm:text-3xl md:text-4xl font-extralight tracking-tight">
-          {getGreeting(firstName)}
+          {getGreeting(firstName, language)}
         </h1>
         {inputArea}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
-          {CHAT_EXAMPLES.map((example) => (
-            <Button
-              key={example}
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={() => onSuggestionClick(example)}
-            >
-              {example}
-            </Button>
-          ))}
+          {CHAT_EXAMPLES.map((example, index) => {
+            const text =
+              language === "fr"
+                ? translateUiText(example, frTranslations)
+                : example;
+            return (
+              <Button
+                key={example}
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => onSuggestionClick(text, index)}
+              >
+                {text}
+              </Button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -499,6 +513,7 @@ function CloseChatButton({ onClose }: { onClose: () => void }) {
 }
 
 function ChatHistoryDropdown() {
+  const { language } = useInterfaceLanguage();
   const [shouldLoadChats, setShouldLoadChats] = useState(false);
   const [open, setOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<ChatHistoryEntry | null>(
@@ -557,6 +572,7 @@ function ChatHistoryDropdown() {
                 <ChatHistoryItem
                   key={chatItem.id}
                   chat={chatItem}
+                  language={language}
                   onSelect={() => {
                     setOpen(false);
                     setChatId(chatItem.id);
@@ -587,7 +603,9 @@ function ChatHistoryDropdown() {
         }}
         chatId={renameTarget?.id ?? ""}
         currentName={renameTarget?.name ?? ""}
-        defaultLabel={renameTarget ? getChatHistoryLabel(renameTarget) : ""}
+        defaultLabel={
+          renameTarget ? getChatHistoryLabel(renameTarget, language) : ""
+        }
         onRenamed={mutate}
       />
       <DeleteChatDialog
@@ -596,7 +614,7 @@ function ChatHistoryDropdown() {
           if (!value) setDeleteTarget(null);
         }}
         chatId={deleteTarget?.id ?? ""}
-        label={deleteTarget ? getChatHistoryLabel(deleteTarget) : ""}
+        label={deleteTarget ? getChatHistoryLabel(deleteTarget, language) : ""}
         onDeleted={() => {
           if (deleteTarget && chatId === deleteTarget.id) setChatId(null);
           mutate();
@@ -606,9 +624,17 @@ function ChatHistoryDropdown() {
   );
 }
 
-function getGreeting(firstName: string | undefined): string {
+function getGreeting(
+  firstName: string | undefined,
+  language: InterfaceLanguage,
+): string {
   const hour = new Date().getHours();
   const name = firstName ? `, ${firstName}` : "";
+  if (language === "fr") {
+    if (hour < 5) return `Salut${name}`;
+    if (hour < 18) return `Bonjour${name}`;
+    return `Bonsoir${name}`;
+  }
   if (hour < 5) return `Hey there${name}`;
   if (hour < 12) return `Good morning${name}`;
   if (hour < 18) return `Good afternoon${name}`;

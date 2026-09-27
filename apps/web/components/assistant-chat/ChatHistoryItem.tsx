@@ -10,14 +10,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { ChatHistoryEntry } from "@/components/assistant-chat/chat-history-types";
 import { getChatHistoryLabel } from "@/components/assistant-chat/chat-history-types";
+import type { InterfaceLanguage } from "@/components/LanguageProvider";
 
 export function ChatHistoryItem({
   chat,
+  language,
   onSelect,
   onRename,
   onDelete,
 }: {
   chat: ChatHistoryEntry;
+  language: InterfaceLanguage;
   onSelect: () => void;
   onRename: () => void;
   onDelete: () => void;
@@ -33,7 +36,7 @@ export function ChatHistoryItem({
           if (menuOpen) e.preventDefault();
         }}
       >
-        <span className="truncate">{getChatHistoryLabel(chat)}</span>
+        <span className="truncate">{getChatHistoryLabel(chat, language)}</span>
       </DropdownMenuItem>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
         <DropdownMenuTrigger asChild>
