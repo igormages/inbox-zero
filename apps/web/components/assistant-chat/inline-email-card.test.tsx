@@ -222,7 +222,7 @@ describe("InlineEmailCard", () => {
     ]);
   });
 
-  it("checks a mail only after archiving succeeds", async () => {
+  it("checks and strikes a mail while archiving, then keeps it handled", async () => {
     let completeArchive: (result: { serverError?: string }) => void = () => {};
     mockArchiveThreadAction.mockImplementation(
       () =>
@@ -238,12 +238,15 @@ describe("InlineEmailCard", () => {
     );
 
     const checkbox = screen.getByRole("checkbox");
+    const title = screen.getByText("Handle this email");
     fireEvent.click(checkbox);
 
     expect(mockArchiveThreadAction).toHaveBeenCalledWith("account-1", {
       threadId: "thread-1",
     });
-    expect(checkbox.getAttribute("data-state")).toBe("unchecked");
+    expect(checkbox.getAttribute("data-state")).toBe("checked");
+    expect(title.classList.contains("line-through")).toBe(true);
+    expect(mockQueueAction).not.toHaveBeenCalled();
 
     await act(async () => completeArchive({}));
 
@@ -251,7 +254,7 @@ describe("InlineEmailCard", () => {
     expect(mockQueueAction).toHaveBeenCalledWith("archive_threads", [
       "thread-1",
     ]);
-    expect(screen.queryByText("Handle this email")).toBeTruthy();
+    expect(title.classList.contains("line-through")).toBe(true);
 
     unmount();
     render(
@@ -266,10 +269,14 @@ describe("InlineEmailCard", () => {
     });
   });
 
-  it("leaves a mail unchecked when archiving fails", async () => {
-    mockArchiveThreadAction.mockResolvedValue({
-      serverError: "Archive failed",
-    });
+  it("reverts the optimistic check and title when archiving fails", async () => {
+    let completeArchive: (result: { serverError?: string }) => void = () => {};
+    mockArchiveThreadAction.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          completeArchive = resolve;
+        }),
+    );
 
     render(
       <InlineEmailList>
@@ -277,14 +284,20 @@ describe("InlineEmailCard", () => {
       </InlineEmailList>,
     );
 
-    fireEvent.click(screen.getByRole("checkbox"));
+    const checkbox = screen.getByRole("checkbox");
+    const title = screen.getByText("Handle this email");
+    fireEvent.click(checkbox);
 
-    await waitFor(() => {
-      expect(mockArchiveThreadAction).toHaveBeenCalledTimes(1);
-    });
+    expect(mockArchiveThreadAction).toHaveBeenCalledTimes(1);
+    expect(checkbox.getAttribute("data-state")).toBe("checked");
+    expect(title.classList.contains("line-through")).toBe(true);
+
+    await act(async () => completeArchive({ serverError: "Archive failed" }));
+
     expect(screen.getByRole("checkbox").getAttribute("data-state")).toBe(
       "unchecked",
     );
+    expect(title.classList.contains("line-through")).toBe(false);
     expect(mockQueueAction).not.toHaveBeenCalled();
   });
 

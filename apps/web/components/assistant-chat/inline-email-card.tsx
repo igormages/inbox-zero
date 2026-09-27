@@ -394,7 +394,7 @@ export function InlineEmailCard({
     }
   }
 
-  const isDone = actionState === "done" || isArchived;
+  const isDone = actionState !== "idle" || isArchived;
   const markReadComplete = isMarkedRead || markReadState === "done";
   const hasSummary = !!children;
 
@@ -406,7 +406,8 @@ export function InlineEmailCard({
         {threadId ? (
           <Checkbox
             checked={isDone}
-            disabled={isDone || actionState === "loading"}
+            disabled={isDone}
+            className="disabled:opacity-100"
             onCheckedChange={(checked) => {
               if (checked) handleArchive();
             }}
@@ -422,13 +423,17 @@ export function InlineEmailCard({
           type="button"
           disabled={!threadId}
           aria-expanded={threadId ? expanded : undefined}
-          className={`flex min-w-0 flex-1 items-center gap-2 text-left ${threadId ? "cursor-pointer" : "cursor-default"} ${isDone ? "line-through opacity-50" : ""}`}
+          className={`flex min-w-0 flex-1 items-center gap-2 text-left ${threadId ? "cursor-pointer" : "cursor-default"} ${isDone ? "opacity-50" : ""}`}
           onClick={() => setExpanded((current) => !current)}
         >
           {meta ? (
             hasSummary ? (
               <div className="min-w-0 flex-1">
-                <div className="text-sm text-foreground">{children}</div>
+                <div
+                  className={`text-sm text-foreground ${isDone ? "line-through" : ""}`}
+                >
+                  {children}
+                </div>
                 <div className="mt-1 truncate text-xs text-muted-foreground">
                   <Tooltip
                     content={extractEmailAddress(meta.from) || meta.from}
@@ -454,7 +459,9 @@ export function InlineEmailCard({
                     {extractNameFromEmail(meta.from)}
                   </span>
                 </Tooltip>
-                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                <span
+                  className={`min-w-0 flex-1 truncate text-sm text-muted-foreground ${isDone ? "line-through" : ""}`}
+                >
                   {meta.subject}
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
@@ -463,7 +470,11 @@ export function InlineEmailCard({
               </div>
             )
           ) : (
-            <span className="min-w-0 flex-1 truncate">{children}</span>
+            <span
+              className={`min-w-0 flex-1 truncate ${isDone ? "line-through" : ""}`}
+            >
+              {children}
+            </span>
           )}
           {threadId ? (
             <span className={iconIndicatorClass} aria-hidden="true">
