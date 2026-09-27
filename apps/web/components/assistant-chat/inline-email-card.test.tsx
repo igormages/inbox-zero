@@ -402,7 +402,7 @@ describe("InlineEmailCard", () => {
     expect(screen.getByRole("menuitem", { name: "Archive" })).toBeTruthy();
   });
 
-  it("renders the preview when message headers are missing", () => {
+  it("opens and closes the email preview when message headers are missing", async () => {
     mockUseThread.mockReturnValue({
       data: {
         thread: {
@@ -433,7 +433,14 @@ describe("InlineEmailCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Second/ }));
 
+    expect(screen.getByRole("dialog")).toBeTruthy();
     expect(screen.getByText("Fallback body")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Fermer l’e-mail" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 });
 

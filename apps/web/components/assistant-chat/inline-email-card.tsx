@@ -15,12 +15,13 @@ import {
 import {
   ArchiveIcon,
   CheckIcon,
-  ChevronDownIcon,
   ChevronRightIcon,
   ExternalLinkIcon,
   InfoIcon,
   MailOpenIcon,
+  Maximize2Icon,
   MoreVerticalIcon,
+  XIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -49,6 +50,13 @@ import { useThread } from "@/hooks/useThread";
 import { LoadingMiniSpinner } from "@/components/Loading";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocalStorage } from "usehooks-ts";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ActionState = "idle" | "loading" | "done";
 
@@ -333,7 +341,7 @@ export function InlineEmailCard({
   const { emailAccountId, provider, userEmail } = useAccount();
   const [actionState, setActionState] = useState<ActionState>("idle");
   const [markReadState, setMarkReadState] = useState<ActionState>("idle");
-  const [expanded, setExpanded] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const threadId = resolveInlineEmailThreadId({ id, threadid });
 
@@ -422,9 +430,9 @@ export function InlineEmailCard({
         <button
           type="button"
           disabled={!threadId}
-          aria-expanded={threadId ? expanded : undefined}
+          aria-haspopup={threadId ? "dialog" : undefined}
           className={`flex min-w-0 flex-1 items-center gap-2 text-left ${threadId ? "cursor-pointer" : "cursor-default"} ${isDone ? "opacity-50" : ""}`}
-          onClick={() => setExpanded((current) => !current)}
+          onClick={() => setPreviewOpen(true)}
         >
           {meta ? (
             hasSummary ? (
@@ -478,11 +486,7 @@ export function InlineEmailCard({
           )}
           {threadId ? (
             <span className={iconIndicatorClass} aria-hidden="true">
-              {expanded ? (
-                <ChevronDownIcon className="size-3.5" />
-              ) : (
-                <ChevronRightIcon className="size-3.5" />
-              )}
+              <Maximize2Icon className="size-3.5" />
             </span>
           ) : null}
         </button>
@@ -520,7 +524,7 @@ export function InlineEmailCard({
               <DropdownMenuItem
                 onClick={() => {
                   setShowDetails((v) => !v);
-                  if (!expanded) setExpanded(true);
+                  setPreviewOpen(true);
                 }}
               >
                 <InfoIcon className="mr-2 size-4" />
@@ -543,9 +547,39 @@ export function InlineEmailCard({
         ) : null}
       </div>
 
-      {expanded && threadId && (
-        <EmailPreview threadId={threadId} showDetails={showDetails} />
-      )}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent
+          unstyled
+          hideCloseButton
+          className="fixed inset-0 z-50 flex h-dvh w-screen flex-col overflow-hidden bg-background outline-none"
+        >
+          <div className="flex min-w-0 shrink-0 items-center justify-between gap-4 border-b px-4 py-3 sm:px-6">
+            <div className="min-w-0">
+              <DialogTitle className="truncate leading-tight">
+                {meta?.subject || "E-mail"}
+              </DialogTitle>
+              <DialogDescription className="truncate">
+                {meta
+                  ? `${extractNameFromEmail(meta.from)} · ${formatShortDate(new Date(meta.date), { lowercase: true })}`
+                  : "Aperçu de l’e-mail"}
+              </DialogDescription>
+            </div>
+            <DialogClose
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Fermer l’e-mail"
+            >
+              <XIcon className="size-5" />
+            </DialogClose>
+          </div>
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6">
+              {threadId && (
+                <EmailPreview threadId={threadId} showDetails={showDetails} />
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -698,9 +732,9 @@ function EmailPreview({
   }
 
   return (
-    <div className="max-h-[32rem] overflow-auto border-t bg-muted/20 px-4 py-3">
+    <div className="min-w-0">
       {showDetails ? (
-        <div className="mb-3">
+        <div className="mb-4">
           <EmailDetails message={lastMessage} />
         </div>
       ) : null}
