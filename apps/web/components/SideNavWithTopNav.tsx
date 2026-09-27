@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { useLocalStorage } from "usehooks-ts";
 import {
   SidebarInset,
   SidebarProvider,
@@ -15,7 +16,13 @@ import { cn } from "@/utils";
 
 const CrispWithNoSSR = dynamic(() => import("@/components/CrispChat"));
 
-function ContentWrapper({ children }: { children: React.ReactNode }) {
+function ContentWrapper({
+  children,
+  chatWidth,
+}: {
+  children: React.ReactNode;
+  chatWidth: number;
+}) {
   const { state } = useSidebar();
   const pathname = usePathname();
   const isAssistantRoute = pathname?.includes("/assistant");
@@ -30,9 +37,10 @@ function ContentWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div
+      style={{ "--chat-sidebar-width": `${chatWidth}px` } as CSSProperties}
       className={cn(
         "min-w-0 flex-1 transition-all duration-200 ease-linear",
-        isRightSidebarOpen && "lg:mr-[450px]",
+        isRightSidebarOpen && "lg:mr-[min(var(--chat-sidebar-width),90vw)]",
       )}
     >
       <SidebarInset
@@ -63,6 +71,14 @@ export function SideNavWithTopNav({
   feedbackEnabled: boolean;
 }) {
   const pathname = usePathname();
+  const [storedChatWidth, setChatWidth] = useLocalStorage<number>(
+    "chat-sidebar-width",
+    450,
+    { initializeWithValue: false },
+  );
+  const chatWidth = Number.isFinite(storedChatWidth)
+    ? Math.min(1200, Math.max(360, storedChatWidth))
+    : 450;
 
   if (!pathname) return null;
 
@@ -93,8 +109,14 @@ export function SideNavWithTopNav({
           <SideNav name="left-sidebar" feedbackEnabled={feedbackEnabled} />
         </>
       )}
-      <ContentWrapper>{children}</ContentWrapper>
-      {!isAssistantRoute ? <SidebarRight name="chat-sidebar" /> : null}
+      <ContentWrapper chatWidth={chatWidth}>{children}</ContentWrapper>
+      {!isAssistantRoute ? (
+        <SidebarRight
+          name="chat-sidebar"
+          width={chatWidth}
+          onWidthChange={setChatWidth}
+        />
+      ) : null}
     </SidebarProvider>
   );
 }

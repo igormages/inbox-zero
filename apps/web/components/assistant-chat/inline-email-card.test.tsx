@@ -116,6 +116,7 @@ afterEach(() => {
 describe("InlineEmailCard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
 
     mockUseAccount.mockReturnValue({
       emailAccountId: "account-1",
@@ -219,6 +220,72 @@ describe("InlineEmailCard", () => {
     expect(mockQueueAction).toHaveBeenCalledWith("archive_threads", [
       "19cdca06580b38e9",
     ]);
+  });
+
+  it("checks a mail only after archiving succeeds", async () => {
+    let completeArchive: (result: { serverError?: string }) => void = () => {};
+    mockArchiveThreadAction.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          completeArchive = resolve;
+        }),
+    );
+
+    const { unmount } = render(
+      <InlineEmailList>
+        <InlineEmailCard threadid="thread-1">Handle this email</InlineEmailCard>
+      </InlineEmailList>,
+    );
+
+    const checkbox = screen.getByRole("checkbox");
+    fireEvent.click(checkbox);
+
+    expect(mockArchiveThreadAction).toHaveBeenCalledWith("account-1", {
+      threadId: "thread-1",
+    });
+    expect(checkbox.getAttribute("data-state")).toBe("unchecked");
+
+    await act(async () => completeArchive({}));
+
+    expect(checkbox.getAttribute("data-state")).toBe("checked");
+    expect(mockQueueAction).toHaveBeenCalledWith("archive_threads", [
+      "thread-1",
+    ]);
+    expect(screen.queryByText("Handle this email")).toBeTruthy();
+
+    unmount();
+    render(
+      <InlineEmailList>
+        <InlineEmailCard threadid="thread-1">Handle this email</InlineEmailCard>
+      </InlineEmailList>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox").getAttribute("data-state")).toBe(
+        "checked",
+      );
+    });
+  });
+
+  it("leaves a mail unchecked when archiving fails", async () => {
+    mockArchiveThreadAction.mockResolvedValue({
+      serverError: "Archive failed",
+    });
+
+    render(
+      <InlineEmailList>
+        <InlineEmailCard threadid="thread-1">Handle this email</InlineEmailCard>
+      </InlineEmailList>,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    await waitFor(() => {
+      expect(mockArchiveThreadAction).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByRole("checkbox").getAttribute("data-state")).toBe(
+      "unchecked",
+    );
+    expect(mockQueueAction).not.toHaveBeenCalled();
   });
 
   it("uses the provider URL for Outlook open-in-email links", () => {
@@ -360,6 +427,7 @@ describe("InlineEmailCard", () => {
 describe("InlineEmailList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
 
     mockUseAccount.mockReturnValue({
       emailAccountId: "account-1",

@@ -47,6 +47,8 @@ import { HtmlEmail, PlainEmail } from "@/components/email-list/EmailContents";
 import { EmailDetails } from "@/components/email-list/EmailDetails";
 import { useThread } from "@/hooks/useThread";
 import { LoadingMiniSpinner } from "@/components/Loading";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useLocalStorage } from "usehooks-ts";
 
 type ActionState = "idle" | "loading" | "done";
 
@@ -72,8 +74,14 @@ export function InlineEmailList({ children }: { children?: ReactNode }) {
   const [markReadState, setMarkReadState] = useState<ActionState>("idle");
   const [collapsed, setCollapsed] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
-  const [archivedThreadIds, setArchivedThreadIds] = useState<Set<string>>(
-    () => new Set(),
+  const [archivedThreadIdList, setArchivedThreadIdList] = useLocalStorage<
+    string[]
+  >(`assistant-archived-threads:${emailAccountId}`, [], {
+    initializeWithValue: false,
+  });
+  const archivedThreadIds = useMemo(
+    () => new Set(archivedThreadIdList),
+    [archivedThreadIdList],
   );
   const [readThreadIds, setReadThreadIds] = useState<Set<string>>(
     () => new Set(),
@@ -118,7 +126,9 @@ export function InlineEmailList({ children }: { children?: ReactNode }) {
   }, [allHandled, hasAutoCollapsed]);
 
   function markArchived(threadIds: string[]) {
-    setArchivedThreadIds((current) => addThreadIds(current, threadIds));
+    setArchivedThreadIdList((current) => [
+      ...new Set([...current, ...threadIds]),
+    ]);
   }
 
   function markRead(threadIds: string[]) {
@@ -386,137 +396,75 @@ export function InlineEmailCard({
 
   const isDone = actionState === "done" || isArchived;
   const markReadComplete = isMarkedRead || markReadState === "done";
-  const showArchive = Boolean(threadId);
   const hasSummary = !!children;
 
   return (
     <div>
       <div
-        role={threadId ? "button" : undefined}
-        tabIndex={threadId ? 0 : undefined}
-        className={`group flex items-center gap-2 border-b border-border/40 pl-2 pr-3 text-sm last:border-b-0 ${hasSummary ? "py-3" : "py-1.5"} ${threadId ? "cursor-pointer" : ""} ${isDone ? "bg-muted/30 line-through opacity-50" : "hover:bg-muted/50"}`}
-        onClick={() => threadId && setExpanded(!expanded)}
-        onKeyDown={(e) => {
-          if (threadId && (e.key === "Enter" || e.key === " ")) {
-            e.preventDefault();
-            setExpanded(!expanded);
-          }
-        }}
+        className={`group flex items-center gap-2 border-b border-border/40 pl-3 pr-2 text-sm last:border-b-0 ${hasSummary ? "py-3" : "py-1.5"} ${isDone ? "bg-muted/30" : "hover:bg-muted/50"}`}
       >
-        {index !== undefined ? (
-          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-            {index}.
-          </span>
+        {threadId ? (
+          <Checkbox
+            checked={isDone}
+            disabled={isDone || actionState === "loading"}
+            onCheckedChange={(checked) => {
+              if (checked) handleArchive();
+            }}
+            aria-label={
+              index !== undefined
+                ? `Archiver et traiter l’e-mail ${index}`
+                : "Archiver et traiter cet e-mail"
+            }
+          />
         ) : null}
 
-        {meta ? (
-          hasSummary ? (
-            <div className="min-w-0 flex-1">
-              <div className="text-sm text-foreground">{children}</div>
-              <div className="mt-1 truncate text-xs text-muted-foreground">
+        <button
+          type="button"
+          disabled={!threadId}
+          aria-expanded={threadId ? expanded : undefined}
+          className={`flex min-w-0 flex-1 items-center gap-2 text-left ${threadId ? "cursor-pointer" : "cursor-default"} ${isDone ? "line-through opacity-50" : ""}`}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {meta ? (
+            hasSummary ? (
+              <div className="min-w-0 flex-1">
+                <div className="text-sm text-foreground">{children}</div>
+                <div className="mt-1 truncate text-xs text-muted-foreground">
+                  <Tooltip
+                    content={extractEmailAddress(meta.from) || meta.from}
+                    side="right"
+                  >
+                    <span className="font-medium">
+                      {extractNameFromEmail(meta.from)}
+                    </span>
+                  </Tooltip>
+                  {" · "}
+                  <span className="tabular-nums">
+                    {formatShortDate(new Date(meta.date), { lowercase: true })}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <Tooltip
                   content={extractEmailAddress(meta.from) || meta.from}
                   side="right"
                 >
-                  <span className="font-medium">
+                  <span className="w-40 shrink-0 truncate text-sm font-medium">
                     {extractNameFromEmail(meta.from)}
                   </span>
                 </Tooltip>
-                {" · "}
-                <span className="tabular-nums">
+                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                  {meta.subject}
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {formatShortDate(new Date(meta.date), { lowercase: true })}
                 </span>
               </div>
-            </div>
+            )
           ) : (
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <Tooltip
-                content={extractEmailAddress(meta.from) || meta.from}
-                side="right"
-              >
-                <span className="w-40 shrink-0 truncate text-sm font-medium">
-                  {extractNameFromEmail(meta.from)}
-                </span>
-              </Tooltip>
-              <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                {meta.subject}
-              </span>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                {formatShortDate(new Date(meta.date), { lowercase: true })}
-              </span>
-            </div>
-          )
-        ) : (
-          <span className="min-w-0 flex-1 truncate">{children}</span>
-        )}
-
-        <div className="flex shrink-0 items-center gap-0.5">
-          {threadId ? (
-            <DropdownMenu>
-              <Tooltip content="More actions">
-                <DropdownMenuTrigger
-                  className={iconButtonClass}
-                  aria-label="More actions"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.stopPropagation();
-                    }
-                  }}
-                >
-                  <MoreVerticalIcon className="size-3.5" />
-                </DropdownMenuTrigger>
-              </Tooltip>
-              <DropdownMenuContent align="end" className="w-48">
-                {showArchive ? (
-                  <DropdownMenuItem
-                    disabled={isDone || actionState === "loading"}
-                    onClick={handleArchive}
-                  >
-                    {isDone ? (
-                      <CheckIcon className="mr-2 size-4" />
-                    ) : (
-                      <ArchiveIcon className="mr-2 size-4" />
-                    )}
-                    {isDone ? "Archived" : "Archive"}
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem
-                  disabled={markReadComplete || markReadState === "loading"}
-                  onClick={handleMarkRead}
-                >
-                  {markReadComplete ? (
-                    <CheckIcon className="mr-2 size-4" />
-                  ) : (
-                    <MailOpenIcon className="mr-2 size-4" />
-                  )}
-                  {markReadComplete ? "Marked read" : "Mark as read"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setShowDetails((v) => !v);
-                    if (!expanded) setExpanded(true);
-                  }}
-                >
-                  <InfoIcon className="mr-2 size-4" />
-                  {showDetails ? "Hide details" : "Show details"}
-                </DropdownMenuItem>
-                {externalUrl ? (
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLinkIcon className="mr-2 size-4" />
-                      Open in email
-                    </a>
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-
+            <span className="min-w-0 flex-1 truncate">{children}</span>
+          )}
           {threadId ? (
             <span className={iconIndicatorClass} aria-hidden="true">
               {expanded ? (
@@ -526,7 +474,65 @@ export function InlineEmailCard({
               )}
             </span>
           ) : null}
-        </div>
+        </button>
+
+        {threadId ? (
+          <DropdownMenu>
+            <Tooltip content="More actions">
+              <DropdownMenuTrigger
+                className={iconButtonClass}
+                aria-label="More actions"
+              >
+                <MoreVerticalIcon className="size-3.5" />
+              </DropdownMenuTrigger>
+            </Tooltip>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                disabled={isDone || actionState === "loading"}
+                onClick={handleArchive}
+              >
+                {isDone ? (
+                  <CheckIcon className="mr-2 size-4" />
+                ) : (
+                  <ArchiveIcon className="mr-2 size-4" />
+                )}
+                {isDone ? "Archived" : "Archive"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={markReadComplete || markReadState === "loading"}
+                onClick={handleMarkRead}
+              >
+                {markReadComplete ? (
+                  <CheckIcon className="mr-2 size-4" />
+                ) : (
+                  <MailOpenIcon className="mr-2 size-4" />
+                )}
+                {markReadComplete ? "Marked read" : "Mark as read"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setShowDetails((v) => !v);
+                  if (!expanded) setExpanded(true);
+                }}
+              >
+                <InfoIcon className="mr-2 size-4" />
+                {showDetails ? "Hide details" : "Show details"}
+              </DropdownMenuItem>
+              {externalUrl ? (
+                <DropdownMenuItem asChild>
+                  <a
+                    href={externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLinkIcon className="mr-2 size-4" />
+                    Open in email
+                  </a>
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </div>
 
       {expanded && threadId && (
