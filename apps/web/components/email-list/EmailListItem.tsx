@@ -124,7 +124,10 @@ export const EmailListItem = forwardRef(
                   />
                 </div>
 
-                <div className="ml-4 w-28 shrink-0 overflow-hidden truncate text-foreground sm:w-36 xl:w-48">
+                <div
+                  className="ml-4 w-28 shrink-0 overflow-hidden truncate text-foreground sm:w-36 xl:w-48"
+                  data-i18n-ignore
+                >
                   {extractNameFromEmail(
                     participant(lastMessage, props.userEmail),
                   )}{" "}
@@ -152,10 +155,16 @@ export const EmailListItem = forwardRef(
                         </Link>
                       </Button>
                     )}
-                    <div className="ml-2 min-w-0 overflow-hidden truncate text-foreground">
+                    <div
+                      className="ml-2 min-w-0 overflow-hidden truncate text-foreground"
+                      data-i18n-ignore
+                    >
                       {lastMessage.headers.subject}
                     </div>
-                    <div className="ml-4 mr-6 min-w-0 flex-1 overflow-hidden truncate font-normal leading-5 text-muted-foreground">
+                    <div
+                      className="ml-4 mr-6 min-w-0 flex-1 overflow-hidden truncate font-normal leading-5 text-muted-foreground"
+                      data-i18n-ignore
+                    >
                       {decodedSnippet}
                     </div>
                   </>
@@ -199,12 +208,18 @@ export const EmailListItem = forwardRef(
             {splitView && (
               <div className="mt-1.5 min-w-0 overflow-hidden text-sm leading-6">
                 <div className="flex min-w-0 items-center gap-2">
-                  <div className="min-w-0 overflow-hidden truncate font-medium text-foreground">
+                  <div
+                    className="min-w-0 overflow-hidden truncate font-medium text-foreground"
+                    data-i18n-ignore
+                  >
                     {lastMessage.headers.subject}
                   </div>
                   <LabelBadges labels={labels} />
                 </div>
-                <div className="mr-6 mt-0.5 min-w-0 overflow-hidden truncate pl-1 font-normal leading-5 text-muted-foreground">
+                <div
+                  className="mr-6 mt-0.5 min-w-0 overflow-hidden truncate pl-1 font-normal leading-5 text-muted-foreground"
+                  data-i18n-ignore
+                >
                   {decodedSnippet}
                 </div>
                 {cta && (

@@ -13,6 +13,7 @@ import { SerwistProvider, useSerwist } from "@serwist/next/react";
 import { toast } from "sonner";
 import { SWRConfig } from "swr";
 import { swrFetcher } from "./swr-fetcher";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import {
   DESKTOP_WEB_UPDATE_LAST_PROMPTED_KEY,
   getInboxZeroDesktopApp,
@@ -37,7 +38,9 @@ export function GlobalProviders(props: { children: React.ReactNode }) {
       <ManageServiceWorker />
       <SignalDesktopReady />
       <SWRConfig value={{ fetcher: swrFetcher }}>
-        <NuqsAdapter>{props.children}</NuqsAdapter>
+        <LanguageProvider>
+          <NuqsAdapter>{props.children}</NuqsAdapter>
+        </LanguageProvider>
       </SWRConfig>
     </SerwistProvider>
   );

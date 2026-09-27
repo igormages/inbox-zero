@@ -439,7 +439,7 @@ function ConversationReader({
         isStarred={isStarred}
         isUnread={isUnread}
         labelChips={(header?.metadata.labelIds ?? []).slice(0, 4).map((id) => (
-          <span key={id} style={styles.labelChip}>
+          <span key={id} style={styles.labelChip} data-i18n-ignore>
             {id}
           </span>
         ))}

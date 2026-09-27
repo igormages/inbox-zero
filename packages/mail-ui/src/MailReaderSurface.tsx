@@ -90,7 +90,10 @@ export function MailReaderToolbar({
                 title="Starred conversation"
               />
             )}
-            <h1 className="font-title font-medium text-2xl text-foreground leading-tight tracking-tight">
+            <h1
+              data-i18n-ignore
+              className="font-title font-medium text-2xl text-foreground leading-tight tracking-tight"
+            >
               {subject}
             </h1>
           </div>
@@ -212,17 +215,22 @@ export function MailMessageStack({
           className="rounded-lg border border-border p-4"
           key={message.id}
         >
-          <h2 className="font-medium text-foreground text-lg">
+          <h2 data-i18n-ignore className="font-medium text-foreground text-lg">
             {message.subject || "(no subject)"}
           </h2>
-          <p className="text-muted-foreground text-sm">{message.from}</p>
+          <p data-i18n-ignore className="text-muted-foreground text-sm">
+            {message.from}
+          </p>
           <p className="text-muted-foreground text-xs">
             {new Date(message.receivedAtMs).toLocaleString([], {
               dateStyle: "medium",
               timeStyle: "short",
             })}
           </p>
-          <div className="mt-3 whitespace-pre-wrap text-foreground text-sm">
+          <div
+            data-i18n-ignore
+            className="mt-3 whitespace-pre-wrap text-foreground text-sm"
+          >
             {message.body}
           </div>
         </section>

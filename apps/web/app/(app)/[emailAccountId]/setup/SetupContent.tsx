@@ -38,6 +38,7 @@ import { BRAND_NAME } from "@/utils/branding";
 import { dismissHintAction } from "@/utils/actions/hints";
 import { toastError } from "@/components/Toast";
 import { createClientLogger } from "@/utils/logger-client";
+import { useInterfaceLanguage } from "@/components/LanguageProvider";
 import { withSetupActionTimeout } from "./setup-action-timeout";
 
 const SETUP_ACTION_TIMEOUT_MS = 15_000;
@@ -262,6 +263,7 @@ function Checklist({
   } | null;
   onSetupProgressChanged: (stepKey: DismissibleSetupStep) => void;
 }) {
+  const { language } = useInterfaceLanguage();
   const { executeAsync: dismissSetupStep } = useAction(dismissHintAction);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [pendingStep, setPendingStep] = useState<DismissibleSetupStep | null>(
@@ -317,7 +319,9 @@ function Checklist({
           <h2 className="font-semibold text-foreground">Complete your setup</h2>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">
-              {completedCount} of {totalSteps} completed
+              {language === "fr"
+                ? `${completedCount} étape${completedCount > 1 ? "s" : ""} sur ${totalSteps} terminée${completedCount > 1 ? "s" : ""}`
+                : `${completedCount} of ${totalSteps} completed`}
             </span>
             <div className="h-2 w-32 overflow-hidden rounded-full bg-muted">
               <div
@@ -401,7 +405,11 @@ function Checklist({
           href={EXTENSION_URL}
           linkProps={{ target: "_blank", rel: "noopener noreferrer" }}
           icon={<GlobeIcon size={18} />}
-          title={`Optional: Install the ${BRAND_NAME} Tabs extension`}
+          title={
+            language === "fr"
+              ? `Facultatif : installer l’extension Tabs de ${BRAND_NAME}`
+              : `Optional: Install the ${BRAND_NAME} Tabs extension`
+          }
           timeEstimate="1 minute"
           completed={isTabsExtensionCompleted}
           actionText="Install"
@@ -488,15 +496,22 @@ function SetupPageContent({
   } | null;
   onSetupProgressChanged: (stepKey: DismissibleSetupStep) => void;
 }) {
+  const { language } = useInterfaceLanguage();
   const shouldShowSetupChecklist = forceSetupMode || !isSetupComplete;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col p-6">
       <div className="mb-4 sm:mb-8">
-        <PageHeading className="text-center">{`Welcome to ${BRAND_NAME}`}</PageHeading>
+        <PageHeading className="text-center">
+          {language === "fr"
+            ? `Bienvenue sur ${BRAND_NAME}`
+            : `Welcome to ${BRAND_NAME}`}
+        </PageHeading>
         <SectionDescription className="mt-2 text-center text-base">
           {shouldShowSetupChecklist
-            ? `Complete these steps to get the most out of ${BRAND_NAME}`
+            ? language === "fr"
+              ? `Suivez ces étapes pour profiter pleinement de ${BRAND_NAME}`
+              : `Complete these steps to get the most out of ${BRAND_NAME}`
             : "What would you like to do?"}
         </SectionDescription>
       </div>

@@ -34,6 +34,7 @@ export function MailLabelChip({
 
   return (
     <span
+      data-i18n-ignore
       className={cn(
         "group/chip relative isolate inline-flex min-w-0 max-w-full items-center gap-0.5 whitespace-nowrap rounded-md border border-transparent px-1.5 py-px text-xs leading-4 before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:-z-10 before:rounded-md before:border before:transition-[right] before:content-['']",
         providerStyle

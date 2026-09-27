@@ -153,7 +153,9 @@ export function MessagePart({
     return (
       <Reasoning key={key} isStreaming={isStreaming} className="w-full">
         <ReasoningTrigger />
-        <ReasoningContent>{part.text}</ReasoningContent>
+        <div data-i18n-ignore>
+          <ReasoningContent>{part.text}</ReasoningContent>
+        </div>
       </Reasoning>
     );
   }
@@ -162,9 +164,9 @@ export function MessagePart({
     const text = part.text;
     if (!text) return null;
     return (
-      <AssistantInlineEmailResponse key={key}>
-        {text}
-      </AssistantInlineEmailResponse>
+      <div key={key} data-i18n-ignore>
+        <AssistantInlineEmailResponse>{text}</AssistantInlineEmailResponse>
+      </div>
     );
   }
 
@@ -194,7 +196,7 @@ export function MessagePart({
         key={key}
         className="inline-flex items-center gap-2 rounded-lg border bg-muted px-3 py-2 text-sm"
       >
-        {part.filename ?? "File"}
+        <span data-i18n-ignore>{part.filename ?? "File"}</span>
       </div>
     );
   }

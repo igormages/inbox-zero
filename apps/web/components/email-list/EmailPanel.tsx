@@ -38,10 +38,11 @@ export function EmailPanel({
           <h1
             id="message-heading"
             className="text-lg font-medium text-foreground"
+            data-i18n-ignore
           >
             {lastMessage.headers.subject}
           </h1>
-          <MutedText className="mt-1 truncate">
+          <MutedText className="mt-1 truncate" data-i18n-ignore>
             {lastMessage.headers.from}
           </MutedText>
         </div>

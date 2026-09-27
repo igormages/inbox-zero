@@ -87,6 +87,7 @@ export function MailThreadRow({
   const participantLine = (
     <>
       <span
+        data-i18n-ignore
         className={cx(
           "min-w-0 truncate text-foreground text-sm",
           isUnread && "font-semibold",
@@ -111,6 +112,7 @@ export function MailThreadRow({
             : "font-normal text-foreground",
         )}
         data-mail-thread-subject
+        data-i18n-ignore
       >
         {subject}
       </span>
@@ -181,14 +183,20 @@ export function MailThreadRow({
               <div className="flex min-w-0 items-center gap-2.5">
                 {headline}
               </div>
-              <span className="line-clamp-2 text-muted-foreground text-sm">
+              <span
+                className="line-clamp-2 text-muted-foreground text-sm"
+                data-i18n-ignore
+              >
                 {snippet}
               </span>
             </div>
           ) : (
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
               {headline}
-              <span className="min-w-0 flex-1 truncate text-muted-foreground text-sm">
+              <span
+                className="min-w-0 flex-1 truncate text-muted-foreground text-sm"
+                data-i18n-ignore
+              >
                 {snippet}
               </span>
             </div>
@@ -209,10 +217,12 @@ export function MailThreadRow({
                 : "font-normal text-foreground",
             )}
             data-mail-thread-subject
+            data-i18n-ignore
           >
             {subject}
           </div>
           <div
+            data-i18n-ignore
             className={cx(
               "text-muted-foreground text-xs",
               expandedPreview ? "line-clamp-3" : "truncate",

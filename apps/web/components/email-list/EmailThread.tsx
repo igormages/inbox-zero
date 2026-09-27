@@ -217,7 +217,10 @@ export function EmailThread({
         })}
         {withHeader && (
           <div className="flex items-center justify-between">
-            <div className="font-semibold text-2xl text-foreground">
+            <div
+              className="font-semibold text-2xl text-foreground"
+              data-i18n-ignore
+            >
               {messages[0]?.headers.subject}
             </div>
             {topRightComponent && (

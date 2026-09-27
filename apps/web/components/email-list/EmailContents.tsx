@@ -196,7 +196,11 @@ export function PlainEmail({ text }: { text: string }) {
     [text],
   );
 
-  return <MailPlainTextBody segments={segments} />;
+  return (
+    <div data-i18n-ignore>
+      <MailPlainTextBody segments={segments} />
+    </div>
+  );
 }
 
 async function loadInlineImageSources({

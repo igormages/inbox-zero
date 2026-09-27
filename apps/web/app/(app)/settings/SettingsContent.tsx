@@ -20,6 +20,7 @@ import { ApiKeysSection } from "@/app/(app)/[emailAccountId]/settings/ApiKeysSec
 import { McpSection } from "@/app/(app)/[emailAccountId]/settings/McpSection";
 import { EmailOtpSection } from "@/app/(app)/settings/EmailOtpSection";
 import { AppearanceSection } from "@/app/(app)/settings/AppearanceSection";
+import { LanguageSection } from "@/app/(app)/settings/LanguageSection";
 import { TeamSection } from "@/app/(app)/settings/TeamSection";
 import { BillingSection } from "@/app/(app)/[emailAccountId]/settings/BillingSection";
 import { CleanupDraftsSection } from "@/app/(app)/[emailAccountId]/settings/CleanupDraftsSection";
@@ -160,6 +161,8 @@ export function SettingsContent() {
         >
           <ItemCard className="p-4">
             <ModelSection />
+            <ItemSeparator className="my-4" />
+            <LanguageSection />
           </ItemCard>
           {user?.isDecisionModelAvailable && (
             <ItemCard>
@@ -253,13 +256,16 @@ function EmailAccountSettingsCard({
         <Avatar className="size-8 rounded-full">
           <AvatarImage
             src={emailAccount.image || ""}
+            data-i18n-ignore
             alt={emailAccount.name || emailAccount.email}
           />
           <AvatarFallback className="rounded-full text-xs">
             {emailAccount.name?.charAt(0) || emailAccount.email?.charAt(0)}
           </AvatarFallback>
         </Avatar>
-        <span className="flex-1 text-sm font-medium">{emailAccount.email}</span>
+        <span data-i18n-ignore className="flex-1 text-sm font-medium">
+          {emailAccount.email}
+        </span>
         {connectedProviders.map((provider) => (
           <Badge
             key={provider}

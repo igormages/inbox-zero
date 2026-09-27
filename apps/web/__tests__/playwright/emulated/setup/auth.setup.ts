@@ -16,6 +16,9 @@ const authorizeUrl =
 test(`${playwrightMailProvider} emulator signs in and creates an app account`, async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("inbox-zero:interface-language", "en");
+  });
   await page.goto("/login?next=%2Fwelcome-redirect%3Fforce%3Dtrue", {
     waitUntil: "domcontentloaded",
   });
