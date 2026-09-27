@@ -38,6 +38,7 @@ const smartSingleQuotedAttributePattern = /=\s*[‘’]([^‘’]*)[‘’]/g;
 const tagWhitespacePattern = /("[^"]*"|'[^']*')|\s+/g;
 const encodedDoubleQuotes = ["&quot;", "&#34;", "&#x22;"];
 const encodedSingleQuotes = ["&apos;", "&#39;", "&#x27;"];
+const leadingEmptyReasoningTagPattern = /^\s*<think>\s*<\/think>/i;
 type QuoteKind =
   | "ascii-double"
   | "ascii-single"
@@ -47,7 +48,9 @@ type QuoteKind =
   | "encoded-single";
 
 export function normalizeAssistantTagMarkup(content: string) {
-  return decodeEntityEscapedTags(content)
+  return decodeEntityEscapedTags(
+    content.replace(leadingEmptyReasoningTagPattern, ""),
+  )
     .replace(backslashEscapedTagPattern, "$1")
     .replace(assistantTagPattern, normalizeTag)
     .replace(selfClosingTagPattern, "<$1$2></$1>");

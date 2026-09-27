@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { normalizeAssistantTagMarkup } from "@/components/assistant-chat/assistant-tag-normalization";
 
 describe("normalizeAssistantTagMarkup", () => {
+  it("renders a heading following an empty reasoning tag as Markdown", () => {
+    const content =
+      '<think></think>## À traiter maintenant\n\n<emails>\n<email threadid="thread-1">Review</email>\n</emails>';
+
+    expect(normalizeAssistantTagMarkup(content)).toBe(
+      '## À traiter maintenant\n\n<emails>\n<email threadid="thread-1">Review</email>\n</emails>',
+    );
+  });
+
   it.each([
     {
       name: "whitespace between attributes",
