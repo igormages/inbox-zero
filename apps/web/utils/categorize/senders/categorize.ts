@@ -153,11 +153,13 @@ function preCategorizeSendersWithStaticRules(
     : categoryNames.has("Veille et offres")
       ? "Veille et offres"
       : undefined;
-  const receiptCategory = categoryNames.has(defaultCategory.RECEIPT.name)
-    ? defaultCategory.RECEIPT.name
-    : categoryNames.has("Finances et démarches")
-      ? "Finances et démarches"
-      : undefined;
+  const receiptCategory = categoryNames.has("Factures et reçus")
+    ? "Factures et reçus"
+    : categoryNames.has(defaultCategory.RECEIPT.name)
+      ? defaultCategory.RECEIPT.name
+      : categoryNames.has("Finances et démarches")
+        ? "Finances et démarches"
+        : undefined;
 
   return senders.map((sender) => {
     if (newsletterCategory && isNewsletterSender(sender))

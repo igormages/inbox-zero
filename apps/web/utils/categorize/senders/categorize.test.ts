@@ -158,7 +158,7 @@ describe("categorizeWithAi", () => {
     ]);
   });
 
-  it("recognizes French newsletter and receipt categories", async () => {
+  it("uses the dedicated French receipt category ahead of general finances", async () => {
     const result = await categorizeWithAi({
       emailAccount,
       sendersWithEmails: new Map([
@@ -167,13 +167,14 @@ describe("categorizeWithAi", () => {
       ]),
       categories: [
         { name: "Veille et offres", description: "Lectures et offres" },
-        { name: "Finances et démarches", description: "Factures" },
+        { name: "Finances et démarches", description: "Banques et fiscalité" },
+        { name: "Factures et reçus", description: "Justificatifs" },
       ],
     });
 
     expect(result).toEqual([
       { sender: "newsletter@substack.com", category: "Veille et offres" },
-      { sender: "receipt@example.com", category: "Finances et démarches" },
+      { sender: "receipt@example.com", category: "Factures et reçus" },
     ]);
     expect(vi.mocked(aiCategorizeSenders)).toHaveBeenCalledWith(
       expect.objectContaining({ senders: [] }),
