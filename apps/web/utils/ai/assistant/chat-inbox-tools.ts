@@ -316,7 +316,7 @@ export const getSenderCategoryOverviewTool = ({
 }) =>
   tool({
     description:
-      "Inspect sender categories for the current account. Returns exact category names, sender counts, sample senders, uncategorized sender count, and current categorization progress. Use this before any category-based cleanup, and prefer it over searchInbox when the user asks to clean up by category. If the user only wants the threads already shown or a small explicit set of emails, stay with searchInbox and manageInbox instead.",
+      "Inspect sender categories for the current account. Returns category names, counts of known senders, sample senders, uncategorized known senders, and current categorization progress. These sender counts describe the locally discovered senders, not a complete distribution of mailbox messages. Use this before category-based cleanup, and prefer it over searchInbox when the user asks to clean up by category. If the user only wants the threads already shown or a small explicit set of emails, stay with searchInbox and manageInbox instead.",
     inputSchema: z.object({}),
     execute: async () => {
       trackToolCall({ tool: "get_sender_category_overview", email, logger });
@@ -349,7 +349,7 @@ export const startSenderCategorizationTool = ({
 }) =>
   tool({
     description:
-      "Start sender categorization for the current account. This creates default categories if needed, enables automatic sender categorization, queues uncategorized senders for AI categorization, and returns current progress. Use this only when category cleanup is needed and getSenderCategoryOverview shows category coverage is not ready. After starting, poll getSenderCategorizationStatus only briefly before deciding whether cleanup can continue. Safe to call again: if a run is already active, it returns the existing run instead of starting a duplicate job.",
+      "Start sender categorization for the current account. This creates default categories if needed, enables automatic sender categorization, queues discovered uncategorized senders for AI categorization, and returns current progress. Use this only when category cleanup is needed and getSenderCategoryOverview shows category coverage is not ready. If senderDiscoveryIncomplete is true, the category counts cover only discovered senders; do not describe them as a complete mailbox breakdown or give an exact category count for all messages. Gmail discovery is deliberately bounded to preserve quota for interactive searches. After starting, poll getSenderCategorizationStatus only briefly before deciding whether cleanup can continue. Safe to call again: if a run is already active, it returns the existing run instead of starting a duplicate job.",
     inputSchema: z.object({}),
     execute: async () => {
       trackToolCall({ tool: "start_sender_categorization", email, logger });

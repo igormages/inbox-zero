@@ -226,6 +226,7 @@ describe("startBulkCategorization", () => {
       alreadyRunning: false,
       totalQueuedSenders: 0,
       autoCategorizeSenders: true,
+      senderDiscoveryIncomplete: false,
       progress: {
         status: "completed",
         totalItems: 0,
@@ -287,6 +288,111 @@ describe("startBulkCategorization", () => {
     expect(mockPublishToAiCategorizeSendersQueue).toHaveBeenNthCalledWith(2, {
       emailAccountId: "account-1",
       senders: [{ email: "second@example.com", name: "Second" }],
+    });
+  });
+
+  it("keeps already queued senders and reports incomplete discovery when Gmail is throttled", async () => {
+    mockGetUncategorizedSenders.mockResolvedValue({
+      uncategorizedSenders: [{ email: "first@example.com", name: "First" }],
+    });
+    mockLoadEmails.mockRejectedValue({
+      response: {
+        status: 403,
+        data: {
+          error: {
+            errors: [{ reason: "rateLimitExceeded" }],
+            message: "Quota exceeded for quota metric Total Query Cost",
+          },
+        },
+      },
+    });
+
+    const result = await startBulkCategorization({
+      emailAccountId: "account-1",
+      emailProvider: {} as never,
+      logger,
+    });
+
+    expect(result).toMatchObject({
+      started: true,
+      totalQueuedSenders: 1,
+      senderDiscoveryIncomplete: true,
+    });
+    expect(mockPublishToAiCategorizeSendersQueue).toHaveBeenCalledOnce();
+  });
+
+  it("does not exhaust the Gmail quota in a single categorization request", async () => {
+    mockGetUncategorizedSenders.mockResolvedValue({
+      uncategorizedSenders: [{ email: "first@example.com", name: "First" }],
+    });
+    mockLoadEmails.mockResolvedValue({
+      pages: 1,
+      loadedAfterMessages: 0,
+      loadedBeforeMessages: 20,
+      hasMoreAfter: false,
+      hasMoreBefore: true,
+    });
+
+    const result = await startBulkCategorization({
+      emailAccountId: "account-1",
+      emailProvider: {} as never,
+      logger,
+    });
+
+    expect(mockLoadEmails).toHaveBeenCalledTimes(2);
+    expect(result.senderDiscoveryIncomplete).toBe(true);
+    expect(result.totalQueuedSenders).toBe(1);
+  });
+
+  it("queues senders discovered on the final allowed Gmail page", async () => {
+    mockGetUncategorizedSenders
+      .mockResolvedValueOnce({ uncategorizedSenders: [] })
+      .mockResolvedValueOnce({ uncategorizedSenders: [] })
+      .mockResolvedValueOnce({
+        uncategorizedSenders: [{ email: "last@example.com", name: "Last" }],
+      });
+    mockLoadEmails.mockResolvedValue({
+      pages: 1,
+      loadedAfterMessages: 0,
+      loadedBeforeMessages: 20,
+      hasMoreAfter: false,
+      hasMoreBefore: true,
+    });
+
+    const result = await startBulkCategorization({
+      emailAccountId: "account-1",
+      emailProvider: {} as never,
+      logger,
+    });
+
+    expect(mockPublishToAiCategorizeSendersQueue).toHaveBeenCalledWith({
+      emailAccountId: "account-1",
+      senders: [{ email: "last@example.com", name: "Last" }],
+    });
+    expect(result.totalQueuedSenders).toBe(1);
+  });
+
+  it("does not claim completion if throttling occurs before any senders are found", async () => {
+    mockGetUncategorizedSenders.mockResolvedValue({
+      uncategorizedSenders: [],
+    });
+    mockLoadEmails.mockRejectedValue({
+      response: {
+        status: 403,
+        data: { error: { errors: [{ reason: "rateLimitExceeded" }] } },
+      },
+    });
+
+    const result = await startBulkCategorization({
+      emailAccountId: "account-1",
+      emailProvider: {} as never,
+      logger,
+    });
+
+    expect(result).toMatchObject({
+      started: false,
+      senderDiscoveryIncomplete: true,
+      progress: { status: "idle" },
     });
   });
 });

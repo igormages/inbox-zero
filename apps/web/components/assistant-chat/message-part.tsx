@@ -41,6 +41,10 @@ import {
 import type { DeleteRuleOutput } from "@/utils/ai/assistant/tools/rules/delete-rule-tool";
 import { getUserVisibleToolFailureMessage } from "@/utils/ai/assistant/chat-response-guard";
 import { pluralize } from "@/utils/string";
+import {
+  useInterfaceLanguage,
+  type InterfaceLanguage,
+} from "@/components/LanguageProvider";
 
 interface MessagePartProps {
   disableConfirm: boolean;
@@ -101,7 +105,21 @@ function isLegacyUpdateRuleStatePart(
 }
 
 function ErrorToolCard({ error }: { error: string }) {
-  return <div className="text-xs text-muted-foreground">Error: {error}</div>;
+  const { language } = useInterfaceLanguage();
+  const translatedError =
+    language === "fr"
+      ? {
+          "Failed to start sender categorization":
+            "La catégorisation des expéditeurs n'a pas pu démarrer",
+          "Failed to search inbox":
+            "La recherche dans la boîte de réception a échoué",
+        }[error] || error
+      : error;
+  return (
+    <div className="text-xs text-muted-foreground">
+      {language === "fr" ? "Erreur" : "Error"} : {translatedError}
+    </div>
+  );
 }
 
 function renderToolError(toolCallId: string, output: unknown) {
@@ -145,6 +163,7 @@ export function MessagePart({
   partIndex,
   threadLookup,
 }: MessagePartProps) {
+  const { language } = useInterfaceLanguage();
   const key = `${messageId}-${partIndex}`;
 
   if (part.type === "reasoning") {
@@ -782,7 +801,7 @@ export function MessagePart({
       renderSuccess: ({ toolCallId, output }) => (
         <BasicToolInfo
           key={toolCallId}
-          text={getSenderCategoryOverviewSuccessText(output)}
+          text={getSenderCategoryOverviewSuccessText(output, language)}
         />
       ),
     });
@@ -795,7 +814,7 @@ export function MessagePart({
       renderSuccess: ({ toolCallId, output }) => (
         <BasicToolInfo
           key={toolCallId}
-          text={getStartSenderCategorizationSuccessText(output)}
+          text={getStartSenderCategorizationSuccessText(output, language)}
         />
       ),
     });
@@ -808,7 +827,7 @@ export function MessagePart({
       renderSuccess: ({ toolCallId, output }) => (
         <BasicToolInfo
           key={toolCallId}
-          text={getSenderCategorizationStatusSuccessText(output)}
+          text={getSenderCategorizationStatusSuccessText(output, language)}
         />
       ),
     });
@@ -998,14 +1017,33 @@ function getToolSuccessMessage(output: unknown): string | null {
   return toMessageString((output as Record<string, unknown>).message);
 }
 
-function getSenderCategoryOverviewSuccessText(output: unknown): string {
+function getSenderCategoryOverviewSuccessText(
+  output: unknown,
+  language: InterfaceLanguage,
+): string {
   const categories = getOutputField<Array<unknown>>(output, "categories");
   const categoryCount = Array.isArray(categories) ? categories.length : 0;
   const uncategorized =
     getOutputField<number>(output, "uncategorizedSenderCount") ?? 0;
 
   if (categoryCount === 0 && uncategorized === 0) {
-    return "No sender categories yet";
+    return language === "fr"
+      ? "Aucune catégorie d'expéditeur pour le moment"
+      : "No sender categories yet";
+  }
+
+  if (language === "fr") {
+    const parts = [
+      ...(categoryCount > 0
+        ? [`${categoryCount} catégorie${categoryCount > 1 ? "s" : ""}`]
+        : []),
+      ...(uncategorized > 0
+        ? [
+            `${uncategorized} expéditeur${uncategorized > 1 ? "s" : ""} non catégorisé${uncategorized > 1 ? "s" : ""}`,
+          ]
+        : []),
+    ];
+    return `Trouvé : ${parts.join(", ")}`;
   }
 
   const parts: string[] = [];
@@ -1022,31 +1060,58 @@ function getSenderCategoryOverviewSuccessText(output: unknown): string {
   return `Found ${parts.join(", ")}`;
 }
 
-function getStartSenderCategorizationSuccessText(output: unknown): string {
+function getStartSenderCategorizationSuccessText(
+  output: unknown,
+  language: InterfaceLanguage,
+): string {
   const alreadyRunning = getOutputField<boolean>(output, "alreadyRunning");
   const totalQueued = getOutputField<number>(output, "totalQueuedSenders") ?? 0;
+  const incomplete = getOutputField<boolean>(
+    output,
+    "senderDiscoveryIncomplete",
+  );
 
   if (alreadyRunning) {
-    return "Sender categorization already in progress";
+    return language === "fr"
+      ? "Catégorisation des expéditeurs en cours"
+      : "Sender categorization already in progress";
   }
+  const suffix = incomplete
+    ? language === "fr"
+      ? " — découverte des expéditeurs incomplète"
+      : " — sender discovery incomplete"
+    : "";
   if (totalQueued > 0) {
-    return `Categorizing ${totalQueued} ${pluralize(totalQueued, "sender", "senders")}`;
+    return language === "fr"
+      ? `Catégorisation de ${totalQueued} expéditeur${totalQueued > 1 ? "s" : ""}${suffix}`
+      : `Categorizing ${totalQueued} ${pluralize(totalQueued, "sender", "senders")}${suffix}`;
   }
-  return "No senders to categorize";
+  return language === "fr"
+    ? `Aucun expéditeur à catégoriser${suffix}`
+    : `No senders to categorize${suffix}`;
 }
 
-function getSenderCategorizationStatusSuccessText(output: unknown): string {
+function getSenderCategorizationStatusSuccessText(
+  output: unknown,
+  language: InterfaceLanguage,
+): string {
   const status = getOutputField<string>(output, "status");
   const total = getOutputField<number>(output, "totalItems") ?? 0;
   const completed = getOutputField<number>(output, "completedItems") ?? 0;
 
   if (status === "completed") {
-    return "Categorization complete";
+    return language === "fr"
+      ? "Catégorisation terminée"
+      : "Categorization complete";
   }
   if (status === "running") {
-    return `Categorizing senders (${completed} of ${total})`;
+    return language === "fr"
+      ? `Catégorisation des expéditeurs (${completed} sur ${total})`
+      : `Categorizing senders (${completed} of ${total})`;
   }
-  return "Categorization hasn't started";
+  return language === "fr"
+    ? "Catégorisation non démarrée"
+    : "Categorization hasn't started";
 }
 
 function toMessageString(value: unknown): string | null {

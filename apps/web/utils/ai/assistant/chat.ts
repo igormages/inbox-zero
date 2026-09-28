@@ -818,6 +818,7 @@ export function buildResolvedSystemPrompt({
     `Response style and formatting:
 - Always explain the changes you made.
 - Use simple language and avoid jargon in your reply.
+- Reply in the language of the user's latest request. Explain tool failures in that language instead of repeating raw provider error text.
 - If you are unable to complete a requested action, say so and explain why.
 - Keep responses concise by default.
 - Don't tell the user which tools you're using. The tools you use will be displayed in the UI anyway.
