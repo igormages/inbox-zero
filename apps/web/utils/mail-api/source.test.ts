@@ -561,7 +561,7 @@ describe("createEmailProviderMailboxSource", () => {
     });
   });
 
-  it("enumerates mailbox pages including drafts", async () => {
+  it("enumerates the Gmail inbox first, then the rest of the mailbox", async () => {
     const getMessagesWithPagination = vi.fn().mockResolvedValue({
       messages: [],
     });
@@ -581,18 +581,96 @@ describe("createEmailProviderMailboxSource", () => {
         },
       } as unknown as EmailProvider,
     });
-    await source.enumerate({
+    const firstPage = await source.enumerate({
       session: { accountId: "acc-1", generation: "g1" },
       requestId: "r1",
       signal: new AbortController().signal,
       bootstrapId: "mailbox",
-      page: "{}",
+      page: JSON.stringify({
+        pageToken: "legacy-page-token",
+        catchUpFrom: {
+          streamId: "primary",
+          generation: "g1",
+          checkpoint: "original-cursor",
+        },
+      }),
       pageSize: 50,
     });
     expect(getMessagesWithPagination).toHaveBeenCalledWith({
       maxResults: 50,
       pageToken: undefined,
+      query: "in:inbox",
       includeDrafts: true,
+    });
+    expect(firstPage.status).toBe("ok");
+    if (firstPage.status !== "ok") throw new Error("expected ok");
+    expect(firstPage.value.nextPage).toBeTruthy();
+    if (!firstPage.value.nextPage) throw new Error("expected next page");
+
+    const finalPage = await source.enumerate({
+      session: { accountId: "acc-1", generation: "g1" },
+      requestId: "r2",
+      signal: new AbortController().signal,
+      bootstrapId: "mailbox",
+      page: firstPage.value.nextPage,
+      pageSize: 50,
+    });
+    expect(getMessagesWithPagination).toHaveBeenLastCalledWith({
+      maxResults: 50,
+      pageToken: undefined,
+      query: "-in:inbox",
+      includeDrafts: true,
+    });
+    expect(finalPage).toMatchObject({
+      status: "ok",
+      value: {
+        nextPage: null,
+        catchUpFrom: { checkpoint: "original-cursor" },
+      },
+    });
+  });
+
+  it("keeps Gmail page tokens within the inbox phase", async () => {
+    const getMessagesWithPagination = vi
+      .fn()
+      .mockResolvedValueOnce({ messages: [], nextPageToken: "inbox-page-2" })
+      .mockResolvedValueOnce({ messages: [] });
+    const source = createEmailProviderMailboxSource({
+      accountId: "acc-1",
+      provider: {
+        name: "google",
+        getMessagesWithPagination,
+      } as unknown as EmailProvider,
+    });
+    const firstPage = await source.enumerate({
+      session: { accountId: "acc-1", generation: "g1" },
+      requestId: "r1",
+      signal: new AbortController().signal,
+      bootstrapId: "mailbox",
+      page: JSON.stringify({ phase: "inbox" }),
+      pageSize: 50,
+    });
+    expect(firstPage.status).toBe("ok");
+    if (firstPage.status !== "ok") throw new Error("expected ok");
+    if (!firstPage.value.nextPage) throw new Error("expected next page");
+
+    const secondPage = await source.enumerate({
+      session: { accountId: "acc-1", generation: "g1" },
+      requestId: "r2",
+      signal: new AbortController().signal,
+      bootstrapId: "mailbox",
+      page: firstPage.value.nextPage,
+      pageSize: 50,
+    });
+    expect(getMessagesWithPagination).toHaveBeenLastCalledWith({
+      maxResults: 50,
+      pageToken: "inbox-page-2",
+      query: "in:inbox",
+      includeDrafts: true,
+    });
+    expect(secondPage).toMatchObject({
+      status: "ok",
+      value: { nextPage: expect.stringContaining('"phase":"rest"') },
     });
   });
 
@@ -675,7 +753,7 @@ describe("createEmailProviderMailboxSource", () => {
       requestId: "r1",
       signal: new AbortController().signal,
       bootstrapId: "mailbox",
-      page: "{}",
+      page: JSON.stringify({ phase: "rest" }),
       pageSize: 50,
     });
     expect(result).toMatchObject({
@@ -732,7 +810,7 @@ describe("createEmailProviderMailboxSource", () => {
       requestId: "r1",
       signal: new AbortController().signal,
       bootstrapId: "mailbox",
-      page: "{}",
+      page: JSON.stringify({ phase: "rest" }),
       pageSize: 50,
     });
     expect(result.status).toBe("ok");

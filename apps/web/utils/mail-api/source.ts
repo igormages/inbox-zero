@@ -42,6 +42,7 @@ type BootstrapToken = {
   catchUpFrom?: SyncPosition | null;
   folderId?: string | null;
   pageToken?: string;
+  phase?: "inbox" | "rest";
   scopeId?: string;
 };
 
@@ -93,6 +94,7 @@ export function createEmailProviderMailboxSource(input: {
           afterMs: afterMs ?? 0,
           scopeId: scope.id,
           folderId: scopedFolderId(provider, scope),
+          ...(provider.name === "google" && { phase: "inbox" as const }),
         };
         const catchUpFrom: SyncPosition = {
           streamId: token.scopeId ?? "primary",
@@ -120,10 +122,18 @@ export function createEmailProviderMailboxSource(input: {
     async enumerate({ page, session, pageSize }) {
       try {
         const token = JSON.parse(page) as BootstrapToken;
+        const gmailPhase =
+          provider.name === "google" ? (token.phase ?? "inbox") : null;
         const syncPage = await provider.getMessagesWithPagination({
           maxResults: Math.min(pageSize, maxPageSize),
           folderId: token.folderId ?? undefined,
-          pageToken: token.pageToken,
+          pageToken:
+            provider.name === "google" && !token.phase
+              ? undefined
+              : token.pageToken,
+          ...(gmailPhase && {
+            query: gmailPhase === "inbox" ? "in:inbox" : "-in:inbox",
+          }),
           includeDrafts: true,
         });
         const changes = syncPage.messages.map((message) =>
@@ -147,6 +157,27 @@ export function createEmailProviderMailboxSource(input: {
                 catchUpFrom: token.catchUpFrom ?? null,
                 folderId: token.folderId ?? null,
                 pageToken: syncPage.nextPageToken,
+                ...(gmailPhase && { phase: gmailPhase }),
+                scopeId: token.scopeId ?? "primary",
+              }),
+              catchUpFrom: null,
+            },
+          };
+        }
+        if (gmailPhase === "inbox") {
+          return {
+            status: "ok" as const,
+            value: {
+              bootstrapId: "mailbox",
+              scopeId: token.scopeId ?? "primary",
+              changes,
+              requiredHydration,
+              bodies,
+              nextPage: JSON.stringify({
+                afterMs: token.afterMs ?? 0,
+                catchUpFrom: token.catchUpFrom ?? null,
+                folderId: token.folderId ?? null,
+                phase: "rest",
                 scopeId: token.scopeId ?? "primary",
               }),
               catchUpFrom: null,
