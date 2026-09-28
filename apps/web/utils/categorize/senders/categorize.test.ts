@@ -68,6 +68,28 @@ describe("categorizeSender", () => {
     });
     expect(result).toEqual({ categoryId: "cat-other" });
   });
+
+  it("uses a localized fallback category when the AI abstains", async () => {
+    vi.mocked(aiCategorizeSender).mockResolvedValue(null);
+    vi.mocked(upsertSenderRecord).mockResolvedValue({
+      categoryId: "cat-uncategorized",
+    } as Awaited<ReturnType<typeof upsertSenderRecord>>);
+
+    const result = await categorizeSender(
+      "unknown@example.com",
+      emailAccount,
+      provider as never,
+      [
+        {
+          id: "cat-uncategorized",
+          name: "Expéditeurs à classer",
+          description: null,
+        },
+      ],
+    );
+
+    expect(result).toEqual({ categoryId: "cat-uncategorized" });
+  });
 });
 
 describe("categorizeWithAi", () => {
@@ -134,5 +156,27 @@ describe("categorizeWithAi", () => {
       { sender: "receipt@example.com", category: "Receipt" },
       { sender: "other@example.com", category: undefined },
     ]);
+  });
+
+  it("recognizes French newsletter and receipt categories", async () => {
+    const result = await categorizeWithAi({
+      emailAccount,
+      sendersWithEmails: new Map([
+        ["newsletter@substack.com", []],
+        ["receipt@example.com", []],
+      ]),
+      categories: [
+        { name: "Veille et offres", description: "Lectures et offres" },
+        { name: "Finances et démarches", description: "Factures" },
+      ],
+    });
+
+    expect(result).toEqual([
+      { sender: "newsletter@substack.com", category: "Veille et offres" },
+      { sender: "receipt@example.com", category: "Finances et démarches" },
+    ]);
+    expect(vi.mocked(aiCategorizeSenders)).toHaveBeenCalledWith(
+      expect.objectContaining({ senders: [] }),
+    );
   });
 });

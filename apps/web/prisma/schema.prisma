@@ -278,6 +278,8 @@ model MailSplit {
   /// Whether every filter must match, or any one of them ("Show mail matching
   /// all/any of these conditions"). A split with no filters is the plain inbox.
   matchAll  Boolean  @default(true)
+  /// Status views such as Unread do not remove mail from the uncategorized tab.
+  excludeFromOther Boolean @default(true)
 
   emailAccountId String
   emailAccount   EmailAccount      @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
@@ -1017,6 +1019,8 @@ model Category {
   updatedAt   DateTime @updatedAt
   name        String
   description String?
+  /// Optional Gmail label applied to new inbox messages from categorized senders.
+  mailLabelId String?
 
   emailAccountId String
   emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)

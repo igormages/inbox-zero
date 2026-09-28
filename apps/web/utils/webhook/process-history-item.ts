@@ -2,6 +2,7 @@ import { after } from "next/server";
 import prisma from "@/utils/prisma";
 import { runRules } from "@/utils/ai/choose-rule/run-rules";
 import { categorizeSender } from "@/utils/categorize/senders/categorize";
+import { applySenderCategoryMailLabel } from "@/utils/categorize/senders/apply-mail-label";
 import {
   isFilebotEmail,
   isFilebotNotificationMessage,
@@ -181,14 +182,9 @@ export async function processHistoryItem(
       logger.warn("OTP push notification processing failed", { error });
     }
 
-    if (!hasAiAccess) {
-      logger.info("Skipping. No AI access.");
-      return;
-    }
-
     // categorize a sender if we haven't already
     // this is used for category filters in ai rules
-    if (emailAccount.autoCategorizeSenders) {
+    if (hasAiAccess && emailAccount.autoCategorizeSenders) {
       const sender = email;
       const senderName = extractNameFromEmail(parsedMessage.headers.from);
       const displayName =
@@ -214,6 +210,18 @@ export async function processHistoryItem(
           displayName,
         );
       }
+    }
+
+    await applySenderCategoryMailLabel({
+      emailAccountId,
+      message: parsedMessage,
+      provider,
+      logger,
+    });
+
+    if (!hasAiAccess) {
+      logger.info("Skipping. No AI access.");
+      return;
     }
 
     logger.info("Pre-rules check", { hasAutomationRules, hasAiAccess });

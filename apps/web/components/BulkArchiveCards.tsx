@@ -88,38 +88,23 @@ export function BulkArchiveCards({
     [categories],
   );
 
-  // Get the names of default categories to determine which categories to show as separate tabs
-  const defaultCategoryNames = useMemo(
-    () => new Set<string>(Object.values(defaultCategory).map((c) => c.name)),
-    [],
-  );
-
   const groupedEmails = useMemo(() => {
-    const grouped = groupBy(emailGroups, (group) => {
-      const categoryName =
-        categoryMap[group.category?.name || ""]?.name || "Uncategorized";
+    const grouped = groupBy(
+      emailGroups,
+      (group) =>
+        categoryMap[group.category?.name || ""]?.name || "Uncategorized",
+    );
 
-      // If the category is not one of the default categories, group it under "Other"
-      // This handles legacy categories from before the 4+Other category system
-      if (
-        categoryName !== "Uncategorized" &&
-        !defaultCategoryNames.has(categoryName)
-      ) {
-        return defaultCategory.OTHER.name;
-      }
-
-      return categoryName;
-    });
-
-    // Always show default categories (even with 0 senders)
-    for (const cat of Object.values(defaultCategory)) {
-      if (!grouped[cat.name]) {
-        grouped[cat.name] = [];
-      }
+    for (const category of categories) {
+      grouped[category.name] ??= [];
     }
 
+    if (!categories.length)
+      for (const category of Object.values(defaultCategory))
+        grouped[category.name] ??= [];
+
     return grouped;
-  }, [emailGroups, categoryMap, defaultCategoryNames]);
+  }, [emailGroups, categoryMap, categories]);
 
   // Sort categories alphabetically, but always put Other and Uncategorized last
   const sortedCategoryEntries = useMemo(
@@ -127,8 +112,10 @@ export function BulkArchiveCards({
       Object.entries(groupedEmails).sort(([a], [b]) => {
         if (a === "Uncategorized") return 1;
         if (b === "Uncategorized") return -1;
-        if (a === defaultCategory.OTHER.name) return 1;
-        if (b === defaultCategory.OTHER.name) return -1;
+        if (a === defaultCategory.OTHER.name || a === "Expéditeurs à classer")
+          return 1;
+        if (b === defaultCategory.OTHER.name || b === "Expéditeurs à classer")
+          return -1;
         return a.localeCompare(b);
       }),
     [groupedEmails],

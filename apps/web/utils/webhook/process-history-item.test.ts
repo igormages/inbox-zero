@@ -358,6 +358,38 @@ describe("Provider Edge Cases", () => {
       expect(provider.getMessage).toHaveBeenCalledWith("msg-123");
     });
 
+    it("labels a categorized sender's inbox message without automation rules", async () => {
+      vi.mocked(prisma.newsletter.findFirst)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          category: { mailLabelId: "Label_123" },
+        } as never);
+      const parsedMessage = getMockParsedMessage({
+        labelIds: ["INBOX"],
+        headers: {
+          from: "Sender <sender@example.com>",
+          to: "user@test.com",
+          subject: "Test",
+          date: "2024-01-01",
+        },
+      });
+      const provider = createMockEmailProvider({
+        getMessage: vi.fn().mockResolvedValue(parsedMessage),
+        isSentMessage: vi.fn().mockReturnValue(false),
+      });
+
+      await processHistoryItem(
+        { messageId: parsedMessage.id, threadId: parsedMessage.threadId },
+        { ...baseOptions, provider },
+      );
+
+      expect(provider.labelMessage).toHaveBeenCalledWith({
+        messageId: parsedMessage.id,
+        labelId: "Label_123",
+        labelName: null,
+      });
+    });
+
     it("handles sent messages via handleOutboundMessage", async () => {
       const provider = createMockEmailProvider({
         getMessage: vi.fn().mockResolvedValue(

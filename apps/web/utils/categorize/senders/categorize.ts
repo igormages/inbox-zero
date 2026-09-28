@@ -1,6 +1,6 @@
 import prisma from "@/utils/prisma";
 import { aiCategorizeSenders } from "@/utils/ai/categorize-sender/ai-categorize-senders";
-import { defaultCategory, type SenderCategory } from "@/utils/categories";
+import { defaultCategory } from "@/utils/categories";
 import { isNewsletterSender } from "@/utils/ai/group/find-newsletters";
 import { isReceiptSender } from "@/utils/ai/group/find-receipts";
 import { aiCategorizeSender } from "@/utils/ai/categorize-sender/ai-categorize-single-sender";
@@ -39,7 +39,9 @@ export async function categorizeSender(
   });
 
   const fallbackCategory = categories.find(
-    (category) => category.name === defaultCategory.OTHER.name,
+    (category) =>
+      category.name === defaultCategory.OTHER.name ||
+      category.name === "Expéditeurs à classer",
   );
   const categoryName = aiResult?.category ?? fallbackCategory?.name;
 
@@ -144,21 +146,25 @@ export async function updateCategoryForSender({
 function preCategorizeSendersWithStaticRules(
   senders: string[],
   categories: Pick<Category, "name">[],
-): { sender: string; category: SenderCategory | undefined }[] {
+): { sender: string; category: string | undefined }[] {
   const categoryNames = new Set(categories.map((c) => c.name));
+  const newsletterCategory = categoryNames.has(defaultCategory.NEWSLETTER.name)
+    ? defaultCategory.NEWSLETTER.name
+    : categoryNames.has("Veille et offres")
+      ? "Veille et offres"
+      : undefined;
+  const receiptCategory = categoryNames.has(defaultCategory.RECEIPT.name)
+    ? defaultCategory.RECEIPT.name
+    : categoryNames.has("Finances et démarches")
+      ? "Finances et démarches"
+      : undefined;
 
   return senders.map((sender) => {
-    if (
-      categoryNames.has(defaultCategory.NEWSLETTER.name) &&
-      isNewsletterSender(sender)
-    )
-      return { sender, category: defaultCategory.NEWSLETTER.name };
+    if (newsletterCategory && isNewsletterSender(sender))
+      return { sender, category: newsletterCategory };
 
-    if (
-      categoryNames.has(defaultCategory.RECEIPT.name) &&
-      isReceiptSender(sender)
-    )
-      return { sender, category: defaultCategory.RECEIPT.name };
+    if (receiptCategory && isReceiptSender(sender))
+      return { sender, category: receiptCategory };
 
     return { sender, category: undefined };
   });

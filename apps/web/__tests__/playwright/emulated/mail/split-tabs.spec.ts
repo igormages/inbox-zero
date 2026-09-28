@@ -297,7 +297,7 @@ test("reorders splits with arrows and dragging and persists tab order", async ({
   await expect(tabs).toHaveText(original);
 });
 
-test("Other excludes enabled splits and restores mail when a split is disabled", async ({
+test("To sort excludes category splits and restores mail when a split is disabled", async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -310,7 +310,7 @@ test("Other excludes enabled splits and restores mail when a split is disabled",
     .getByRole("button", { name: "Unread", exact: true })
     .click({ button: "right" });
   await page.getByRole("menuitem", { name: "Turn off split" }).click();
-  await page.getByRole("button", { name: "Other", exact: true }).click();
+  await page.getByRole("button", { name: "To sort", exact: true }).click();
   const promotion = conversationWithSubject(
     page,
     conversations,
@@ -344,7 +344,7 @@ test("Other excludes enabled splits and restores mail when a split is disabled",
   await page.getByLabel("Split name").fill("Promos");
   await page.getByRole("button", { name: "Add split" }).click();
   await expect(promotion).toBeVisible();
-  await page.getByRole("button", { name: "Other", exact: true }).click();
+  await page.getByRole("button", { name: "To sort", exact: true }).click();
   await expect(promotion).toHaveCount(0);
   await capturePlaywrightCheckpoint(
     page,
@@ -356,9 +356,9 @@ test("Other excludes enabled splits and restores mail when a split is disabled",
     .getByRole("button", { name: "Promos", exact: true })
     .click({ button: "right" });
   await page.getByRole("menuitem", { name: "Turn off split" }).click();
-  await page.getByRole("button", { name: "Other", exact: true }).click();
+  await page.getByRole("button", { name: "To sort", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Other", exact: true }),
+    page.getByRole("button", { name: "To sort", exact: true }),
   ).toHaveAttribute("aria-current", "true");
   await expect(promotion).toBeVisible();
 
@@ -371,6 +371,6 @@ test("Other excludes enabled splits and restores mail when a split is disabled",
     page.getByRole("button", { name: "Other (custom)", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Other", exact: true }),
+    page.getByRole("button", { name: "To sort", exact: true }),
   ).toBeVisible();
 });

@@ -321,8 +321,9 @@ export function MailShell() {
           ? [
               {
                 id: OTHER_SPLIT_ID,
-                name: "Other",
+                name: "To sort",
                 matchAll: true,
+                excludeFromOther: true,
                 filters: [],
               },
             ]
@@ -342,6 +343,16 @@ export function MailShell() {
       splits.map((split) => ({
         ...split,
         deletable: split.filters.length > 0,
+        group:
+          !split.filters.length ||
+          split.excludeFromOther === false ||
+          split.filters.every(
+            (filter) =>
+              filter.kind === MailSplitFilterKind.UNREAD ||
+              filter.kind === MailSplitFilterKind.STARRED,
+          )
+            ? ("view" as const)
+            : ("category" as const),
       })),
     [splits],
   );

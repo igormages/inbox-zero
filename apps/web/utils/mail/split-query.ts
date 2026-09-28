@@ -15,6 +15,8 @@ export type MailSplit = {
   name: string;
   /** False means "show mail matching any of these conditions". */
   matchAll: boolean;
+  /** False for cross-cutting views such as Unread and Needs action. */
+  excludeFromOther?: boolean;
   filters: MailSplitFilter[];
 };
 
@@ -26,7 +28,16 @@ export function otherMailSplitQuery(splits: MailSplit[]): ThreadsQuery {
   return {
     type: "inbox",
     excludeSplits: splits
-      .filter((split) => split.filters.length > 0)
+      .filter(
+        (split) =>
+          split.filters.length > 0 &&
+          split.excludeFromOther !== false &&
+          !split.filters.every(
+            (filter) =>
+              filter.kind === MailSplitFilterKind.UNREAD ||
+              filter.kind === MailSplitFilterKind.STARRED,
+          ),
+      )
       .map(({ matchAll, filters }) => ({
         matchAll,
         filters: filters.map(({ kind, value }) => ({ kind, value })),

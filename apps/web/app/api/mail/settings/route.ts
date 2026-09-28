@@ -19,6 +19,7 @@ async function getMailSettings({ emailAccountId }: { emailAccountId: string }) {
           name: true,
           order: true,
           matchAll: true,
+          excludeFromOther: true,
           filters: {
             orderBy: { order: "asc" },
             select: { kind: true, value: true },

@@ -1,7 +1,7 @@
 "use client";
 
 import { PlusIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -15,6 +15,7 @@ export type MailSplitTab = {
   name: string;
   /** Built-in splits (e.g. All) can't be edited or removed. */
   deletable: boolean;
+  group?: "view" | "category";
 };
 
 export type SplitTabsProps = {
@@ -71,60 +72,70 @@ export function SplitTabs({
         className,
       )}
     >
-      {splits.map((split) => {
+      {splits.map((split, index) => {
         const active = split.id === activeSplitId;
         const countLabel = splitCountLabel(countsById?.get(split.id));
+        const groupChanged =
+          split.group &&
+          (index === 0 || splits[index - 1]?.group !== split.group);
 
         return (
-          <ContextMenu key={split.id}>
-            <ContextMenuTrigger asChild disabled={!split.deletable}>
-              <button
-                type="button"
-                ref={active ? activeTabRef : undefined}
-                data-split-tab
-                onClick={() => onSelect(split.id)}
-                // The count sits in this button, so innerText includes it.
-                // The accessible name stays the split itself.
-                aria-label={split.name}
-                aria-current={active ? "true" : undefined}
-                aria-description={
-                  countLabel ? `${countLabel} in this view` : undefined
-                }
-                className={cn(
-                  "flex items-center gap-1 rounded-full py-0.5 pr-2 pl-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  active
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          <Fragment key={split.id}>
+            {groupChanged && (
+              <span className="basis-full pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {split.group === "view" ? "Views" : "Categories"}
+              </span>
+            )}
+            <ContextMenu>
+              <ContextMenuTrigger asChild disabled={!split.deletable}>
+                <button
+                  type="button"
+                  ref={active ? activeTabRef : undefined}
+                  data-split-tab
+                  onClick={() => onSelect(split.id)}
+                  // The count sits in this button, so innerText includes it.
+                  // The accessible name stays the split itself.
+                  aria-label={split.name}
+                  aria-current={active ? "true" : undefined}
+                  aria-description={
+                    countLabel ? `${countLabel} in this view` : undefined
+                  }
+                  className={cn(
+                    "flex items-center gap-1 rounded-full py-0.5 pr-2 pl-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <span data-split-name>{split.name}</span>
+                  {countLabel ? (
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "font-normal tabular-nums",
+                        active ? "text-primary/70" : "opacity-70",
+                      )}
+                    >
+                      {countLabel}
+                    </span>
+                  ) : null}
+                </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="w-44">
+                {onEdit && (
+                  <ContextMenuItem onSelect={() => onEdit(split.id)}>
+                    Edit filters and name
+                  </ContextMenuItem>
                 )}
-              >
-                <span data-split-name>{split.name}</span>
-                {countLabel ? (
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "font-normal tabular-nums",
-                      active ? "text-primary/70" : "opacity-70",
-                    )}
-                  >
-                    {countLabel}
-                  </span>
-                ) : null}
-              </button>
-            </ContextMenuTrigger>
-            <ContextMenuContent className="w-44">
-              {onEdit && (
-                <ContextMenuItem onSelect={() => onEdit(split.id)}>
-                  Edit filters and name
+                <ContextMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => onDelete(split.id)}
+                >
+                  Turn off split
                 </ContextMenuItem>
-              )}
-              <ContextMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={() => onDelete(split.id)}
-              >
-                Turn off split
-              </ContextMenuItem>
-            </ContextMenuContent>
-          </ContextMenu>
+              </ContextMenuContent>
+            </ContextMenu>
+          </Fragment>
         );
       })}
 

@@ -3,11 +3,35 @@ import { MailSplitFilterKind } from "@/generated/prisma/enums";
 import {
   getPortableLabelSplits,
   mailSplitToThreadsQuery,
+  otherMailSplitQuery,
   threadListQueryRequiresInbox,
   type MailSplit,
 } from "@/utils/mail/split-query";
 
 const NOW = new Date("2026-09-09T12:00:00.000Z");
+
+describe("otherMailSplitQuery", () => {
+  it("keeps unread and action views in uncategorized until a topic matches", () => {
+    const unread = split([{ kind: MailSplitFilterKind.UNREAD }]);
+    const needsAction = {
+      ...split([{ kind: MailSplitFilterKind.LABEL, value: "action" }]),
+      excludeFromOther: false,
+    };
+    const finance = split([
+      { kind: MailSplitFilterKind.LABEL, value: "finance" },
+    ]);
+
+    expect(otherMailSplitQuery([unread, needsAction, finance])).toEqual({
+      type: "inbox",
+      excludeSplits: [
+        {
+          matchAll: true,
+          filters: [{ kind: MailSplitFilterKind.LABEL, value: "finance" }],
+        },
+      ],
+    });
+  });
+});
 
 function split(
   filters: { kind: MailSplitFilterKind; value?: string | null }[],
